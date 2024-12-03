@@ -40,7 +40,7 @@ const getUserCurrentAddress=async (latitude,longitude)=>{
 // lat: 19.7514799, lng: 75.7138883}
 }
 
-document.querySelector(".geo-Btn").addEventListener('click',()=>{
+document.querySelector(".geo-Btn").addEventListener('load',()=>{
     if(navigator.geolocation){
         navigator.geolocation.getCurrentPosition((position)=>{
            const{latitude,longitude}=position.coords;
