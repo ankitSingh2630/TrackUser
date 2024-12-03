@@ -1,113 +1,87 @@
-const showDetails=document.querySelector(".showDetails");
-const fullAddress=document.querySelector(".fullAddress");
-const formattedAddress=document.querySelector(".formattedAddress");
-
-let apiEndPoint="https://api.opencagedata.com/geocode/v1/json";
-let apiKey="6e7a527e91c74cf7aeab792a3573c087"
-
-  // Utility function to set cookies
-const setCookie = (name, value, days) => {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-    document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
-};
-
-// api to get user address
-const getUserCurrentAddress=async (latitude,longitude)=>{
-    console.log(latitude)
-    let  query=`${latitude},${longitude}`;
-    let apiUrl=`${apiEndPoint}?key=${apiKey}&q=${query}&pretty=1`;
-    
-    try {
-        const res=await fetch(apiUrl);
-        const data=await res.json();
-        console.log(data);
-        const{city,state,postcode,country}=data.results[0].components;
-        fullAddress.textContent=`User Address: ${city}, ${postcode}, ${state}, ${country}`;
-        formattedAddress.textContent=`user full address:${data.results[0].formatted} `;
-
-
-        // Set data in cookies
-        setCookie('city', city, 7);         // Expires in 7 days
-        setCookie('state', state, 7);       // Expires in 7 days
-        setCookie('postcode', postcode, 7); // Expires in 7 days
-        setCookie('country', country, 7);   // Expires in 7 days
-
-        
-    } catch (error) {
-        
+document.addEventListener("DOMContentLoaded", function() {
+    const x = document.getElementById("demo");
+  
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+      } else {
+        x.innerHTML = "Geolocation is not supported by this browser.";
+      }
     }
-// lat: 19.7514799, lng: 75.7138883}
+  
+    function showPosition(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+  
+      x.innerHTML = `Latitude: ${latitude}<br>Longitude: ${longitude}`;
+  
+      // Store in cookies
+      document.cookie = `latitude=${latitude}; path=/; max-age=3600`; // Cookie expires in 1 hour
+      document.cookie = `longitude=${longitude}; path=/; max-age=3600`;
+      console.log("Latitude and Longitude stored in cookies.");
+    }
+  
+    function showError(error) {
+      if (error.code === 1) {
+        x.innerHTML = "User denied the request for Geolocation.";
+      } else if (error.code === 2) {
+        x.innerHTML = "Location information is unavailable.";
+      } else if (error.code === 3) {
+        x.innerHTML = "The request to get user location timed out.";
+      } else {
+        x.innerHTML = "An unknown error occurred.";
+      }
+    }
+  
+    // Call getLocation on page load
+    getLocation();
+  });
+
+  function getQueryParams() {
+    const queryParams = new URLSearchParams(window.location.search);
+    let params = {};
+
+    queryParams.forEach((value, key) => {
+        params[key] = value;
+    });
+
+    return params;
 }
-document.addEventListener("DOMContentLoaded", () => {
-    const showDetails = document.querySelector(".showDetails");
-    const fullAddress = document.querySelector(".fullAddress");
-    const formattedAddress = document.querySelector(".formattedAddress");
 
-    const apiEndPoint = "https://api.opencagedata.com/geocode/v1/json";
-    const apiKey = "6e7a527e91c74cf7aeab792a3573c087";
-
-    // Utility function to set cookies
-    const setCookie = (name, value, days) => {
-        const date = new Date();
-        date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
-        document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
-    };
-
-    // API to get user address
-    const getUserCurrentAddress = async (latitude, longitude) => {
-        let query = `${latitude},${longitude}`;
-        let apiUrl = `${apiEndPoint}?key=${apiKey}&q=${query}&pretty=1`;
-
-        try {
-            const res = await fetch(apiUrl);
-            const data = await res.json();
-            console.log(data);
-
-            const { city, state, postcode, country } = data.results[0].components;
-            fullAddress.textContent = `User Address: ${city}, ${postcode}, ${state}, ${country}`;
-            formattedAddress.textContent = `User Full Address: ${data.results[0].formatted}`;
-
-            // Set data in cookies
-            setCookie("city", city, 7); // Expires in 7 days
-            setCookie("state", state, 7); // Expires in 7 days
-            setCookie("postcode", postcode, 7); // Expires in 7 days
-            setCookie("country", country, 7); // Expires in 7 days
-        } catch (error) {
-            console.error("Error fetching address:", error);
-        }
-    };
-
-    // Geolocation logic
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-
-                showDetails.textContent = `Latitude: ${latitude}, Longitude: ${longitude}`;
-                getUserCurrentAddress(latitude, longitude);
-            },
-            (error) => {
-                showDetails.textContent = `Geolocation error: ${error.message}`;
-            }
-        );
-    } else {
-        showDetails.textContent = "Geolocation is not supported by this browser.";
+// Function to set cookies for each query parameter
+function setCookies(params) {
+    for (const [key, value] of Object.entries(params)) {
+        // Adding expiration time (1 day) for better testing
+        const expires = new Date();
+        expires.setTime(expires.getTime() + (24 * 60 * 60 * 1000)); // 1 day from now
+        document.cookie = `${key}=${value}; path=/; expires=${expires.toUTCString()}`;
     }
-});
+}
 
-document.querySelector(".geo-Btn").addEventListener('click',()=>{
-    if(navigator.geolocation){
-        navigator.geolocation.getCurrentPosition((position)=>{
-           const{latitude,longitude}=position.coords;
+// Function to get all cookies as an object
+function getCookies() {
+    const cookies = document.cookie.split('; ');
+    let cookieObj = {};
 
-           showDetails.textContent=`the latitude ${latitude} & longitude ${longitude}`;
-           
-           getUserCurrentAddress(latitude,longitude)
+    cookies.forEach(cookie => {
+        const [name, value] = cookie.split('=');
+        cookieObj[name] = value;
+    });
 
-        },
-        (error)=>{
-            showDetails.textContent=error.message;
-        })
-    } 
-})
+    return cookieObj;
+}
+
+// Get query parameters and set them as cookies
+const queryParams = getQueryParams();
+
+// Only set cookies if queryParams is not empty
+if (Object.keys(queryParams).length > 0) {
+    setCookies(queryParams);
+}
+
+// Log the cookies after a brief delay to ensure they are set
+setTimeout(() => {
+    console.log('Cookies:', getCookies());
+}, 1000); // Wait for 1 second to ensure cookies are set
+
+  
