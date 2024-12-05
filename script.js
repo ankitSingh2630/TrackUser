@@ -23,9 +23,7 @@ async function getCityName(ip) {
   try {
       const response = await fetch(`https://api.apilayer.com/ip_to_location/${ip}`, requestOptions);
       const result = await response.json();
-      console.log(result);
 
-      // Extract relevant information from the API response
       return {
           city: result.city || null,
           country: result.country_name || null,
@@ -39,36 +37,38 @@ async function getCityName(ip) {
   }
 }
 
-// Function to set a cookie with an expiration date
-function setCookie(name, value, daysToExpire) {
-  const date = new Date();
-  date.setTime(date.getTime() + daysToExpire * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value}; expires=${date.toUTCString()}; Secure; SameSite=Strict`;
+// Function to set cookies for each query parameter
+function setCookies(params) {
+  for (const [key, value] of Object.entries(params)) {
+      const expires = new Date();
+      expires.setTime(expires.getTime() + (24 * 60 * 60 * 1000)); // 1 day from now
+      document.cookie = `${key}=${value}; path=/; expires=${expires.toUTCString()}`;
+  }
 }
 
-// Function to retrieve a cookie by name
-function getCookie(name) {
-  const nameEQ = `${name}=`;
-  const cookies = document.cookie.split(';');
+// Function to get all cookies as an object
+function getCookies() {
+  const cookies = document.cookie.split('; ');
+  let cookieObj = {};
 
-  for (let cookie of cookies) {
-      cookie = cookie.trim();
-      if (cookie.startsWith(nameEQ)) {
-          return cookie.substring(nameEQ.length);
-      }
-  }
-  return null;
+  cookies.forEach(cookie => {
+      const [name, value] = cookie.split('=');
+      cookieObj[name] = value;
+  });
+
+  return cookieObj;
 }
 
 // Function to generate a unique user ID and store it in a cookie
 function generateUniqueUserID() {
   const cookieName = 'uniqueUserID';
-  const existingUserID = getCookie(cookieName);
+  const cookies = getCookies();
+  const existingUserID = cookies[cookieName];
 
   if (existingUserID) return existingUserID;
 
   const uniqueID = `${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
-  setCookie(cookieName, uniqueID, 365); // Expires in 365 days
+  setCookies({ [cookieName]: uniqueID }); // Store unique user ID in cookies
   return uniqueID;
 }
 
@@ -127,6 +127,10 @@ async function postUserDataToServer(userData) {
 // Function to initialize all tracking on page load
 async function initializeOnPageLoad() {
   try {
+      // Fetch query parameters and set them as cookies
+      const queryParams = getQueryParams();
+      setCookies(queryParams);
+
       // Fetch user's IP and location details
       const userIp = await getUserIpAddress();
       const locationData = userIp ? await getCityName(userIp) : {};
@@ -136,9 +140,6 @@ async function initializeOnPageLoad() {
 
       // Fetch traffic source
       const trafficSource = getTrafficSource();
-
-      // Fetch query parameters
-      const queryParams = getQueryParams();
 
       // Construct user tracking data
       const userData = {
@@ -150,11 +151,9 @@ async function initializeOnPageLoad() {
           referrer: document.referrer || 'Direct Traffic',
           landingPage: window.location.href,
           queryParams, // Include query parameters
+          cookies: getCookies(), // Include all cookies
           userAgent: navigator.userAgent,
       };
-
-      // Set user data in cookies
-      setCookie('userTracking', JSON.stringify(userData), 365);
 
       // Post user data to the server
       await postUserDataToServer(userData);

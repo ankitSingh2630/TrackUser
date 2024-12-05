@@ -60,6 +60,7 @@ function setCookies(params) {
         document.cookie = `${key}=${value}; path=/; expires=${expires.toUTCString()}`;
     }
 }
+ 
 
 // Function to get all cookies as an object
 function getCookies() {
