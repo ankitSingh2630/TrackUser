@@ -13,7 +13,10 @@ document.addEventListener("DOMContentLoaded", function() {
       const latitude = position.coords.latitude;
       const longitude = position.coords.longitude;
   
-      x.innerHTML = `Latitude: ${latitude}<br>Longitude: ${longitude}`;
+    //   x.innerHTML = `Latitude: ${latitude}<br>Longitude: ${longitude}`;
+
+      const userAgent = navigator.userAgent;
+      console.log(userAgent); 
   
       // Store in cookies
       document.cookie = `latitude=${latitude}; path=/; max-age=3600`; // Cookie expires in 1 hour
@@ -66,6 +69,7 @@ function getCookies() {
     cookies.forEach(cookie => {
         const [name, value] = cookie.split('=');
         cookieObj[name] = value;
+        // console.log(cookieObj[name]);
     });
 
     return cookieObj;
