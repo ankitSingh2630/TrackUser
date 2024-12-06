@@ -103,30 +103,57 @@ function getQueryParams() {
   return params;
 }
 
+// Function to check if data has already been posted
+function isDataAlreadyPosted() {
+  return localStorage.getItem('isDataPosted') === 'true';
+}
+
+// Function to mark data as posted
+function markDataAsPosted() {
+  localStorage.setItem('isDataPosted', 'true');
+}
+
+
+
+
 // Function to send user data to the server
 async function postUserDataToServer(userData) {
-  console.log(userData);
-  // Uncomment the following lines to enable posting to the server
-  // try {
-  //     const response = await fetch('http://localhost:5006/api/v2/visitors', {
-  //         method: 'POST',
-  //         headers: { 'Content-Type': 'application/json' },
-  //         body: JSON.stringify(userData),
-  //     });
 
-  //     if (!response.ok) {
-  //         throw new Error('Failed to post user data to server');
-  //     }
-  //     const responseData = await response.json();
-  //     console.log('Data posted successfully:', responseData);
-  // } catch (error) {
-  //     console.error('Error posting data to server:', error);
-  // }
+  const rawString = JSON.stringify(userData);
+
+  // const cleanedString = rawString.replace(/\\/g, '');
+
+  const sendPayload = {
+    user_data: rawString,  // The stringified data stored in the "user_data" field
+  };
+
+  try {
+      const response = await fetch('https://urlpt.technians.in/userdata/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sendPayload), 
+      });
+      // const result = await response.json();
+      // console.log(result);  
+
+      if (!response.ok) {
+          throw new Error('Failed to post user data to server');
+      }
+      const responseData = await response.json();
+      console.log('Data posted successfully:', responseData);
+  } catch (error) {
+      console.error('Error posting data to server:', error);
+  }
 }
 
 // Function to initialize all tracking on page load
 async function initializeOnPageLoad() {
   try {
+
+    if (isDataAlreadyPosted()) {
+      console.log('Data already posted. Skipping initialization.');
+      return;
+    }
       // Fetch query parameters and set them as cookies
       const queryParams = getQueryParams();
       setCookies(queryParams);
@@ -151,12 +178,13 @@ async function initializeOnPageLoad() {
           referrer: document.referrer || 'Direct Traffic',
           landingPage: window.location.href,
           queryParams, // Include query parameters
-          cookies: getCookies(), // Include all cookies
+          // cookies: getCookies(), // Include all cookies
           userAgent: navigator.userAgent,
       };
 
       // Post user data to the server
       await postUserDataToServer(userData);
+      markDataAsPosted();
 
       // Log data for debugging
       console.log('User tracking data initialized:', userData);
